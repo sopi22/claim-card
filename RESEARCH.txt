@@ -372,3 +372,66 @@ RECOMMENDED NEXT EXPERIMENT (open item, not scheduled):
 ================================================================================
 END OF PHASE 1 DELIVERABLE.
 ================================================================================
+
+================================================================================
+11. POST-CLOSURE: EXTRACTION GENERALITY CHECK (does not reopen the
+    Section 10 conclusion, which was scoped to this project's own
+    template family)
+================================================================================
+
+FACT (2026-08-14) -- before pursuing RECOMMENDED NEXT EXPERIMENT item 1
+  above (a wider real-repo hunt), checked a prior question: can the
+  scanner's extraction stage (rules.py) find anything at all in a real
+  repo that does not use this project's own vocabulary ("vocabulary
+  lock," "entropy budget," "R0"-"R3," "CONCLUSION:")? Ran the
+  unmodified scanner, unmodified extraction regexes, against 3 real
+  public repos chosen specifically because each has a genuine
+  self-declared-constraint document, in a different form, none from
+  this project's template family:
+    - stan-dev/httpstan -- an explicit Non-Goals section, but located
+      in doc/contributing.rst, not a root-level README/RESEARCH file.
+    - openai/whisper -- an explicit Limitations section, but located in
+      model-card.md, not a root-level README/RESEARCH file.
+    - microsoft/vscode -- an explicit, detailed CONTRIBUTING.md with
+      stated rules, but not a root-level README/RESEARCH file (and not
+      named "readme"/"research").
+
+  RESULT: extract_rules() returned a completely empty RuleSet on all
+  three (no locked terms, no forbidden terms, no entropy-budget lines,
+  no repro entries, no conclusion grade) and the scan produced 0 flags
+  on all three. Two independent, compounding reasons, both confirmed
+  directly rather than assumed:
+    1. scan.py's `_doc_texts()` only considers top-level files whose
+       stem starts with "readme" or "research" -- each repo's actual
+       constraint document lives elsewhere, so none were even read as
+       rule sources. (Each repo's actual top-level README *was*
+       correctly identified and read -- `rule_source_files` shows
+       README.rst / README.md in all three -- so this is not a
+       file-walk bug; it is that the genuine constraint text isn't in
+       that file for any of these three repos.)
+    2. Even where a real top-level README was read (all three), its
+       phrasing did not match rules.py's vocabulary-specific regexes
+       (`Locked...:`, `Forbidden:`, `^R\d+`, `Reproducibility achieved:
+       R\d+`, `CONCLUSION:`, entropy-budget-style `Label: N` lines) --
+       none of these three projects happen to phrase their own
+       constraints that way, which is unsurprising since that phrasing
+       is this project's own convention, not a general one.
+
+DECISION (2026-08-14) -- scope narrowed in README.txt (CURRENT PHASE
+  section), not in the scanner. No change to rules.py's regexes, no
+  change to scan.py's file-selection stage, no CONTRIBUTING.md/
+  model-card.md fallback added, even though the finding above suggests
+  it would help -- that is exactly the kind of reactive, un-scoped
+  patch this check exists to head off. Extraction generalizing beyond
+  this project's own vocabulary is left as an open question, not a
+  planned or in-progress item: it would need its own falsification-
+  first brief (a stated hypothesis about what generalizes and why, a
+  baseline, a defined pass/fail bar) before any code changes, not a
+  quiet fix prompted by this result. RECOMMENDED NEXT EXPERIMENT item 1
+  (Section 10) is updated by this finding but not superseded: a wider
+  real-repo hunt for naturally-occurring violations remains open and
+  unscheduled, and this result means such a hunt would currently need
+  to be restricted to repos already using this project's own
+  vocabulary convention to produce any extractable rules at all.
+
+================================================================================

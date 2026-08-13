@@ -48,6 +48,33 @@ a real repo with a real, naturally-occurring violation. Reproducibility
 achieved: R1 (same environment, repeated runs, this session). R2/R3 not
 yet performed.
 
+SCOPE (validated vs. tested-and-not-found vs. open)
+-----------------------------------------------------
+Validated: within this project's own template family only -- repos
+that declare a vocabulary lock, an entropy budget, and an R0-R3
+reproducibility ladder in their own README/RESEARCH docs, using this
+project's own phrasing ("Locked:", "Forbidden:", "R0"-"R3",
+"CONCLUSION:"). This is the only setting the four checks have been
+run against with any extractable rules to check.
+
+Tested against 3 real external repos with genuinely different
+self-declared-constraint phrasing, none from this project's template
+family, and found zero extractable rules in any of them (see
+RESEARCH.txt Section 11 for the full result):
+  - stan-dev/httpstan -- Non-Goals section, in doc/contributing.rst.
+  - openai/whisper -- Limitations section, in model-card.md.
+  - microsoft/vscode -- explicit contribution rules, in CONTRIBUTING.md.
+In each case the repo's real constraint document was not at a
+root-level README/RESEARCH path, and separately, none of the three
+repos' actual root-level README used this project's specific
+vocabulary either.
+
+This is a named, current limitation, not a bug fixed in this pass.
+Extraction generalizing beyond this project's own vocabulary and
+file-naming convention is an open question, not something planned,
+in progress, or on a roadmap -- it has not been scoped as an
+experiment yet, and won't be treated as one until it deliberately is.
+
 SETUP / RUN
 ------------
 See scanner/README.txt for exact, copy-pasteable setup and run
