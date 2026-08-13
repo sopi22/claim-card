@@ -48,6 +48,75 @@ CONCLUSION: no found system checks a project's own claims against that
 same project's own stated epistemic rules. Residual gap holds. Building
 is justified. DECISION logged; no fork candidate was found or expected.
 
+--------------------------------------------------------------------------------
+2A. SUPPLEMENTARY NOVELTY CHECK (2026-08-13, later same day, follow-up)
+--------------------------------------------------------------------------------
+
+This entry is additive -- Section 2 above stands as originally logged
+and covered a different, real search. The operator surfaced four
+additional named candidates via their own web search; each was fetched
+and read past its one-line description (README/docs content, not just
+a search snippet) before being logged here.
+
+1. github.com/theonaai/Heron -- CONFIRMED, fetched and read.
+   Interviews an agent via MCP, then deterministically diffs declared
+   capabilities (runtime configs, OAuth scopes, MCP tool inventory)
+   against actual access. Does NOT support custom, project-supplied
+   rules -- it maps findings to fixed, built-in compliance frameworks
+   (EU AI Act, GDPR, ISO/IEC 42001, AIUC-1, NIST AI RMF) via a
+   `src/compliance/` framework-control catalogue. `heron.example.yaml`
+   configures credentials and which LLM does the analysis, not custom
+   audit rules. No plugin or custom-rule-loading mechanism found in the
+   documentation.
+
+2. github.com/scadastrangelove/agent-audit -- CONFIRMED, fetched and
+   read. Forensic auditor for local AI coding agents; reads session
+   logs/configs/instruction files against a fixed, bundled rule set
+   (~573 rules total: 104 ATR + 180 Aguara-derived + 26 Cisco
+   PromptGuard-derived + 217 Gitleaks-derived + 46 NOVA-derived, plus
+   native detectors). No custom-rule config file, plugin architecture,
+   or external rule-pack loader is documented as currently available.
+   `docs/architecture.md` is referenced as covering "how to add
+   detectors/surfaces/rules," which reads as a maintainer-extensibility
+   note, not a documented project-facing custom-rules feature -- worth
+   a second look if this project is revisited, but not counted as
+   custom-rule support here since it isn't demonstrated as such.
+
+3. github.com/yaniv-golan/proof-engine -- CONFIRMED, fetched and read.
+   Verifies claims via code-computed or cited evidence rather than LLM
+   self-assessment; enforces a fixed set of "9 Hardening Rules" against
+   fabricated citations/hallucinated values. `--registry-check` and the
+   `proof-citations` package are runtime options, not a custom-rule
+   definition mechanism. No custom verification-rule loading found.
+
+4. "Bifrost" (deterministic fact-checker for AI coding agents,
+   verifies claims against code/git diff/logs, per search-result
+   snippets) -- NOT CONFIRMED. Multiple unrelated projects share this
+   name: maximhq/bifrost is an LLM API gateway (unrelated function);
+   BrokkAi/bifrost is a multi-language static-analysis/code-query
+   engine -- fetched and read directly, and its actual README describes
+   "code intelligence for AI, with structural queries," not claim
+   verification against git diff/logs, so it does not match the
+   description despite the name match. No repository matching the
+   fact-checker description as actually described could be confirmed.
+   Per instruction, no URL is guessed here. If the operator has the
+   exact repo, it still needs to be checked directly.
+
+FINDING: of the three tools that could be confirmed, none support
+loading custom, project-declared rules -- all three ship fixed,
+built-in rule/framework sets (Heron's compliance-framework catalogue,
+agent-audit's bundled signature packs, proof-engine's 9 hardening
+rules). The fourth (Bifrost) is unconfirmed and this finding makes no
+claim about it either way.
+
+DECISION: Claim Card's stated residual gap -- auditing a project
+against rules that project declared for itself, not a fixed external
+rule set -- still holds against all three confirmed tools. This
+supplementary check does not change the Section 2 conclusion; it adds
+three more checked candidates without narrowing the gap. The one
+open item is Bifrost's identity, which remains genuinely unresolved,
+not resolved in Claim Card's favor by default.
+
 ================================================================================
 3. RESEARCH HYPOTHESIS FRAMING (Section 7)
 ================================================================================
