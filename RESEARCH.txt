@@ -1,0 +1,305 @@
+CLAIM CARD — RESEARCH LOG
+============================
+
+================================================================================
+1. CLARIFICATION GATE (Section 17)
+================================================================================
+
+Q: Does FOSS Pulse make a good first test fixture, or should a synthetic
+   repo with injected violations be built instead?
+A: DECISION — both, not either/or. FOSS Pulse alone (a repo with, as far
+   as could be determined, zero real violations) can only test the
+   tool's behavior on clean text -- it produces no ground truth for
+   whether the checks can actually tell a real violation apart from
+   noise, because it has no real violations to find. A synthetic fixture
+   with known, deliberately-planted violations closes that gap and gives
+   an actual recall/precision reading. Both are used below: FOSS Pulse
+   as the real-world baseline, examples/synthetic_violations/ as the
+   ground-truth recall test. This decision was made without checking
+   back in, per this session's autonomy instruction -- flagged here so
+   it can be revisited.
+
+================================================================================
+2. NOVELTY FIREWALL (Section 4)
+================================================================================
+
+Searched (2026-08-13): AI-agent compliance/audit tooling, AI-text
+detectors, reproducibility-documentation scorers.
+
+Existing systems found:
+  - AudAgent and similar AI-agent compliance auditors: check agent
+    behavior against an external privacy/compliance policy document, not
+    against a project's own self-declared epistemic rules about its own
+    claims.
+  - Stylometric AI-text detectors (isgen.ai, GPTZero, etc.): classify
+    whether text was AI-written at all -- a different question from
+    whether a specific claim in the text matches the evidence logged for
+    it.
+  - SciScore and similar reproducibility-reporting scorers: score how
+    completely a paper documents its methodology, not whether its
+    closing claims are proportionate to what was actually logged.
+  - General AI-agent scope-compliance/governance platforms: check
+    whether an agent stayed within a file/task boundary, not whether its
+    own stated claims (a locked term reappearing, a caveat dropped from
+    a summary, a reproducibility grade exceeding its logged evidence)
+    match what it actually logged.
+
+CONCLUSION: no found system checks a project's own claims against that
+same project's own stated epistemic rules. Residual gap holds. Building
+is justified. DECISION logged; no fork candidate was found or expected.
+
+================================================================================
+3. RESEARCH HYPOTHESIS FRAMING (Section 7)
+================================================================================
+
+H1: A meaningful subset of epistemic-integrity violations in AI-agent-
+authored project artifacts -- locked-vocabulary leakage, entropy-budget
+overruns, reproducibility-grade overclaiming, and completeness-theater
+or manufactured-closure patterns in closing reports -- can be detected
+via deterministic, pattern-based text/structure analysis at a
+false-positive rate low enough to be practically useful.
+
+H0: these violations either don't occur in a detectable, consistent
+form, or deterministic analysis can't distinguish real violations from
+false positives.
+
+FALSIFICATION CRITERIA (as stated in the brief): if, run against FOSS
+Pulse's own real history, the checks produce mostly false positives or
+catch nothing a quick manual read wouldn't already catch effortlessly,
+that supports H0. If false positives exceed roughly half of flagged
+items on the first real test run, that's grounds to reconsider the
+deterministic-only approach.
+
+================================================================================
+4. VOCABULARY LOCK AND ENTROPY BUDGET FOR THIS PROJECT (Sections 9-10)
+================================================================================
+
+Locked: claim, check, flag, pattern, evidentiary grade, closure
+  language, vocabulary term, entropy count, scan.
+Forbidden: capability, provider, broker, cost, negotiation. claim-card's
+  own output MUST NOT use "verified," "proven," "guaranteed," or
+  "confirmed" about what it detects -- a pattern match is a flag for
+  human review. Checked by hand across cli.py/report.py output strings
+  before this log was written; none of the forbidden words or
+  overclaiming words appear in the tool's own output.
+
+Entropy budget used: 4 check types (vocabulary scan, entropy check,
+  reproducibility cross-check, closure audit). 1 persistent format
+  (JSON). Transport: none. External services: 0. Network calls: 0.
+  Background processes: 0. Dependencies: stdlib only at runtime; pytest
+  is a dev-only dependency, same justification pattern as FOSS Pulse's.
+  Git history text comes from the `git` binary via subprocess, not a
+  parsing library -- closes the one named exception case without adding
+  a dependency. Docker: not used, not needed for local static analysis
+  of one repo at a time.
+
+================================================================================
+5. BASELINE -- MANUAL READ (recorded before comparing to tool output)
+================================================================================
+
+Before writing any check code, README.txt and RESEARCH.txt in
+foss-escape-architecture were read directly, and a manual grep for the
+repo's own forbidden-vocabulary terms and a small set of overclaiming
+words (verified, proven, guarantee(d), confirmed, always, never, 100%,
+fully) was run across all non-.venv text files.
+
+What this baseline caught:
+  - README.txt's NON-GOALS list uses "capability", "provider", and
+    "cost" as explicitly disclaimed concepts ("this is explicitly NOT
+    ... a capability/provider abstraction, a cost model").
+  - RESEARCH.txt uses "provider" six more times, all as part of
+    "Settings provider" / "settings-provider", the literal Android API
+    name -- not the locked abstraction sense.
+  - "capability" appears once more, inside a quoted phrase describing
+    what the project's own epistemic rules reject ("advertised
+    capability treated as evidence").
+  - "confirmed" appears five times, none of them a claim about the
+    tool's own detection accuracy -- each is either "the operator
+    confirmed X" or "the probe confirmed the specific path's live
+    state," in a sentence that immediately contrasts it with
+    "assuming."
+  - "verified" appears once, in the CONCLUSION, immediately followed by
+    an explicit caveat in the same paragraph.
+  - The closing section states "No other items are pending on this
+    phase" while a different-OEM-device item is separately marked OPEN,
+    NOT-SCHEDULED elsewhere in the same document -- read in full, the
+    two statements are consistent (the OPEN item is explicitly scoped
+    as non-blocking), not a contradiction.
+
+A quick, unaided skim (not already knowing to search for this specific
+term list) would likely have caught the NON-GOALS disclaimer and the
+CONCLUSION's "verified" sentence on a careful read, but would plausibly
+have missed at least some of the six scattered "Settings provider"
+occurrences and the OPEN-item cross-reference, both several hundred
+lines apart from the text that would need to be held against them.
+
+================================================================================
+6. TOOL RESULTS
+================================================================================
+
+RUN 1 -- foss-escape-architecture (real repo, first test case):
+  17 flags: 11 vocabulary_scan, 6 closure_audit, 0 entropy_check,
+  0 reproducibility_cross_check.
+  Manual review of all 17: every flag corresponds to one of the
+  confounder categories recorded in the baseline above (disclaimed
+  non-goal, quoted description, domain-compound API name, hypothetical/
+  counterfactual framing, or a caveat legitimately carried into the
+  closing section). Zero flags were left unexplained after review.
+  Zero entropy or reproducibility flags -- both cross-checked cleanly:
+  the repo's probe count, dependency count, and R4-vs-logged-entries
+  claim all matched what was declared.
+
+RUN 2 -- examples/synthetic_violations (fixture, known ground truth):
+  A small fixture was written with four planted vocabulary violations
+  (a real, undisclaimed claim using "capability provider... broker...
+  cost"), one planted entropy overrun (3 probe functions against a
+  stated "2 maximum"), one planted reproducibility-grade overclaim
+  (claims R3, only R1 logged), one planted generality claim without an
+  R3 entry, and four planted closure-language violations plus one
+  planted nothing-pending/OPEN-item contradiction.
+  Result: 12 flags, matching all 12 planted violations exactly. Zero
+  false positives, zero false negatives on this fixture.
+
+Bug found and fixed via this fixture: the vocabulary-list and closing-
+language regexes only matched phrases on a single line; hand-wrapped
+plain text (both FOSS Pulse's and this fixture's own docs wrap at
+roughly 78 characters) can split a phrase like "on all devices" across
+a line break, silently defeating a literal-space match. Fixed by
+matching internal whitespace as \s+ instead of a literal space.
+A second bug: the "Forbidden:" list-terminator regex only recognized a
+Unicode em-dash, not the ASCII "--" this fixture happened to use, and
+silently dropped the last listed term when hit. Fixed to accept both.
+Both bugs were caught by disagreement between the tool's output and the
+known ground truth in the synthetic fixture -- neither would have been
+visible from the FOSS Pulse run alone, since that run had no ground
+truth to compare against.
+
+A third, structural bug was found and fixed before either run above:
+the heading detector mis-split FOSS Pulse's own RESEARCH.txt on a
+two-line wrapped heading and a footer paragraph, both purely from
+plain-text formatting, not from any content issue. Fixed by requiring a
+heading candidate line to be preceded by a blank line, an underline, or
+start-of-file.
+
+================================================================================
+7. FALSE POSITIVES / FALSE NEGATIVES
+================================================================================
+
+FALSE POSITIVES: on RUN 1 (real repo), 17/17 flags were confounders
+relative to "a real forbidden-vocabulary or overclaiming violation" --
+by the strict letter of the brief's "false positives exceed roughly
+half of flagged items" criterion, this is over the stated pivot
+threshold. See Section 9 for why this reading needs a caveat rather
+than a flat pass/fail. On RUN 2 (synthetic), 0/12 flags were false
+positives.
+
+FALSE NEGATIVES: none detected on RUN 2 -- all 12 planted violations
+were caught. RUN 1 cannot supply a false-negative reading on its own,
+since (as far as could be determined by the same manual baseline read)
+it contains no real violations to miss.
+
+================================================================================
+8. CONFOUNDERS CONSIDERED (Section 11)
+================================================================================
+
+  - A forbidden term appearing in a disclaimed NON-GOALS/rejected-
+    candidates list, not as a real claim -- the majority cause of
+    RUN 1's vocabulary_scan flags.
+  - A forbidden term used in its ordinary domain sense as part of a
+    compound API name ("Settings provider") rather than the locked
+    architecture-abstraction sense -- the vocab check now annotates
+    this specifically when a capitalized or hyphen-joined prefix word
+    matches a small known list, but this is a fixed allowlist, not
+    general word-sense disambiguation, and will miss compounds it
+    doesn't already know about.
+  - An overclaiming-shaped word used in a hypothetical/counterfactual
+    sentence ("if observations always tracked X, that would weaken
+    H1") rather than as an assertion about actual results -- closure_
+    audit does not currently distinguish this case; it was only caught
+    by manual review in RUN 1, not flagged with a specific note.
+  - A "nothing pending" closing statement that is legitimately
+    reconciled with a separately-logged OPEN item elsewhere in the same
+    document -- closure_audit flags the co-occurrence but cannot itself
+    tell whether the reconciling language is actually present nearby.
+
+================================================================================
+9. REPRODUCIBILITY LEVEL (Section 12)
+================================================================================
+
+R1 -- same environment, repeated runs during this session, both
+against foss-escape-architecture and against examples/synthetic_
+violations, before and after each bug fix in Section 6.
+R2 (separate session) and R3 (separate environment/repo) have not yet
+been performed. The conclusion below is graded no higher than R1;
+claiming a general false-positive rate for the tool across other real
+repos, sight unseen, would be a reproducibility-grade overclaim of
+exactly the kind this tool exists to catch, and is not made here.
+
+================================================================================
+10. FALSIFICATION REPORT (Section 15 deliverable)
+================================================================================
+
+QUESTION: can deterministic, pattern-based text/structure analysis
+detect the four named classes of epistemic-integrity violation at a
+false-positive rate low enough to be practically useful?
+
+PATTERNS TESTED: vocabulary-lock leakage, entropy-budget overrun,
+reproducibility-grade overclaiming (achieved-level and generality-
+language forms), and closure-language/manufactured-closure patterns
+(absolutist words and a nothing-pending-vs-OPEN-item contradiction).
+
+BASELINE (manual read, recorded before running the tool): Section 5.
+
+TOOL RESULT: Section 6, both runs.
+
+FALSE POSITIVES / FALSE NEGATIVES: Section 7.
+
+CONFOUNDERS CONSIDERED: Section 8.
+
+REPRODUCIBILITY LEVEL: R1 (Section 9).
+
+WHAT WOULD CHANGE OUR MIND (as stated in advance): false positives
+exceeding roughly half of flagged items on the first real test run.
+By a strict, literal count this happened (17/17 on FOSS Pulse). By a
+substantive reading it is less clear-cut: FOSS Pulse has no known real
+violations, so a 100% confounder rate there is close to the only
+possible outcome regardless of how good the checks are -- it measures
+noise-on-clean-text, not discriminative power. The synthetic fixture,
+which does have a real denominator, showed 0 false positives against
+12 known violations. Both readings are recorded rather than picking the
+more flattering one.
+
+CONCLUSION: WEAKLY SUPPORTED.
+The checks reliably found every planted violation in a fixture with
+known ground truth, and did not silently miss anything in the real
+repo either (nothing was found there that manual review called a real
+violation and the tool missed, though the sample of real violations in
+that repo is zero, so this is a weak claim). Against real, honestly-
+written text, every flag required a human to spend a few seconds
+resolving it against a confounder, and the two structural bugs in
+Section 6 show the checks are not yet robust to ordinary plain-text
+formatting variation (line wrapping, dash style) without deliberate
+testing to catch it. This is short of "false-positive rate low enough
+to be practically useful, demonstrated" -- that demonstration needs a
+real repo with real, naturally-occurring violations, which neither
+fixture here provides -- but it is well short of NOT SUPPORTED, since
+the tool is demonstrably not just noise: it distinguishes real
+violations from confounders correctly wherever ground truth exists to
+check it against.
+
+RECOMMENDED NEXT EXPERIMENT (open item, not scheduled):
+  1. Find or wait for a second real repo -- ideally one with at least
+     one naturally-occurring violation of its own stated rules -- to
+     get an actual joint precision/recall reading on real text, not
+     just a clean-text noise reading. Not urgent, not required for this
+     phase to be considered complete.
+  2. Give closure_audit the same context-aware confounder notes
+     vocab_scan already has (hypothetical/counterfactual framing in
+     particular), since RUN 1 showed this is currently the check's
+     weakest spot.
+  3. Repeat RUN 1 in a separate session (R2) before relying on the
+     17-flags/17-confounders reading for anything beyond this report.
+
+================================================================================
+END OF PHASE 1 DELIVERABLE.
+================================================================================
