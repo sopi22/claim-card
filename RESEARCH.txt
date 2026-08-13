@@ -434,4 +434,85 @@ DECISION (2026-08-14) -- scope narrowed in README.txt (CURRENT PHASE
   to be restricted to repos already using this project's own
   vocabulary convention to produce any extractable rules at all.
 
+FACT (2026-08-14) -- follow-up hunt, restricted to the narrower
+  population named above: public repos that plausibly use this
+  project's own template family or closely similar phrasing, found via
+  GitHub code/repo search (`gh api search/code`, `search/repositories`)
+  rather than a broad real-repo hunt. Searched, in order of
+  specificity:
+    1. Direct fork/citation: repo search for "foss-escape-architecture"
+       and "claim-card"; code search for either name as a string
+       reference (fork, "inspired by," citation). Result: zero -- the
+       only matches for "foss-escape-architecture" as a repo are
+       sopi22's own; no code anywhere references either project by
+       name.
+    2. Tight combinations of this project's distinctive phrasing:
+       "vocabulary lock" + "entropy budget" (3 hits, 2 repos);
+       "Locked:" + "Forbidden:" + "entropy budget" (0); "closure audit"
+       + "vocabulary lock" (1 hit); "novelty firewall" + "vocabulary
+       lock" (0); "Reproducibility achieved: R" (0, this project's own
+       regex-matching phrase verbatim); "CONCLUSION: WEAKLY SUPPORTED"
+       (0); literal function name "probe_settings_persist" (1 hit);
+       "epistemic integrity" + "entropy budget" (26 hits, one repo
+       cluster).
+    3. Every hit from (2) was fetched and read, not assumed. All were
+       confirmed false positives, coincidental term overlap in
+       unrelated projects, not this project's template family:
+         - UniversalModel/core, UniversalModel/System_Stability_Score:
+           a speculative/fringe physics "string theory" manifesto.
+           "Vocabulary lock" there means locking physics notation
+           terminology; "entropy budget" is literal thermodynamic
+           entropy in a Landauer's-principle argument. Unrelated
+           subject matter, unrelated meaning of both phrases.
+         - ACB-CORE-Labs/builder-2: an unrelated "CodeVault" governance/
+           proof framework (Proof classes R/D/U, Axiom Zero, gate-
+           ordered roadmap). "Vocabulary lock" labels one glossary doc
+           in its own numbering scheme; "B1 Closure Audit" is an
+           unrelated document title. No shared structure with this
+           project's four named checks.
+         - TezcatAI/Tezcat: a Django test file
+           (test_probe_limits.py) -- "probe_settings_persist" was a
+           token-level false match (probe/settings/persist matched
+           separately), not the literal function name.
+         - NeuralBlitz/* (LRS-NeuralBlitz, Linkglys, ComputationalAxioms,
+           ncx, and related repos): a large, independent, pre-existing
+           AI-cognitive-architecture framework ("NBOS") with its own
+           extensive invented vocabulary. "Entropy Budget" there is a
+           drift/plasticity policy cap; "Epistemic Integrity Chain" is
+           their own proof-lineage concept. Neither matches this
+           project's usage, and the framework shows no structural
+           resemblance (no R0-R3 ladder, no vocabulary-lock-as-scanned-
+           rule convention, no falsification-report format).
+    4. Looser single-term hits not chased further, per this hunt's own
+       scope limit (narrow population, not a broad search): "CONCLUSION:
+       SUPPORTED" (141 hits) and "falsification-first" (1704 hits) are
+       common enough phrases on their own, in unrelated contexts (ADR
+       templates, an apparently distinct AI-agent-skill-registry
+       ecosystem), that they don't indicate template-family membership
+       without co-occurring with the distinctive markers above -- none
+       of which they did in the combination searches run.
+
+  RESULT: zero real candidates found. Every hit specific enough to be
+  worth checking was checked, and every one was a confirmed false
+  positive -- coincidental vocabulary overlap in unrelated, independent
+  projects, several of which (UniversalModel, NeuralBlitz, ACB-CORE-
+  Labs) have their own large, unrelated, internally-consistent
+  terminology systems of their own that happen to share a phrase or
+  two with this project's, not evidence of derivation from it.
+
+DECISION (2026-08-14) -- this is a valid, informative null result, not
+  a search failure: per this hunt's own stop condition, no scanner run
+  was performed against any candidate (there were none to run it
+  against), and the vocabulary-matching regexes were not loosened to
+  manufacture candidates. The WEAKLY SUPPORTED conclusion (Section 10)
+  is unchanged -- this hunt did not produce a real repo with a
+  naturally-occurring violation, so RECOMMENDED NEXT EXPERIMENT item 1
+  (Section 10) remains open, unscheduled, and now additionally informed
+  by this finding: even restricted to repos plausibly using this
+  project's own convention, none currently exist in public GitHub
+  search results. A future repo derived from this project's template
+  (e.g. a genuine fork, or a project explicitly modeled on it) would be
+  the way this population stops being empty -- not something to search
+  harder for today.
+
 ================================================================================
