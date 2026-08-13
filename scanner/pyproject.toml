@@ -1,0 +1,22 @@
+[project]
+name = "claim-card"
+version = "0.1.0"
+description = "Deterministic pattern checks for a repo's docs against that repo's own stated epistemic rules"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+# pytest is the one dependency beyond stdlib, and it is test-only. The
+# runtime package itself has zero third-party dependencies -- git history
+# text comes from the `git` binary via subprocess, not a parsing library.
+dev = ["pytest>=7"]
+
+[project.scripts]
+claim-card = "claim_card.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
