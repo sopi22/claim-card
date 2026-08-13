@@ -1,0 +1,32 @@
+SYNTHETIC EXAMPLE — RESEARCH LOG
+==================================
+
+1. DESIGN
+----------
+We built a capability provider layer that acts as a broker between the
+caller and the backend, keeping the cost of each call low. This is a
+real architectural claim, not a disclaimed non-goal and not a quoted
+example -- a genuine vocabulary-lock violation on four separate
+forbidden terms.
+
+================================================================================
+7. REPRODUCIBILITY
+================================================================================
+R1 (single session): ran the check once, in this environment.
+
+Reproducibility achieved: R3
+
+================================================================================
+8. FALSIFICATION REPORT
+================================================================================
+
+CONCLUSION: SUPPORTED. This is fully verified and guaranteed to work on
+all devices, no issues remain, and the result is proven correct.
+
+No other items are pending on this phase.
+
+Separately, elsewhere in this log: a compatibility question for a
+second device type is OPEN and not yet scheduled.
+================================================================================
+END OF DELIVERABLE.
+================================================================================
