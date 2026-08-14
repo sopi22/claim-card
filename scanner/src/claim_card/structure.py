@@ -1,8 +1,12 @@
 """Plain-text section splitting shared by rules.py and the checks.
 
-Recognizes two heading styles seen in practice: a line followed by a line
-of repeated '=' or '-' characters (underline style), and numbered
-ALL-CAPS-ish headings like "8. FALSIFICATION REPORT".
+Recognizes three heading styles seen in practice: a line followed by a
+line of repeated '=' or '-' characters (underline style), numbered
+ALL-CAPS-ish headings like "8. FALSIFICATION REPORT", and standard
+Markdown ATX headers ("#", "##", ... "######"). Added 2026-08-14
+(RESEARCH.txt Section 13) -- every real Markdown repo in Section 12's
+test set used ATX headers exclusively, which this module previously
+had no recognition for at all.
 """
 
 from __future__ import annotations
@@ -12,6 +16,20 @@ from dataclasses import dataclass
 
 _UNDERLINE_RE = re.compile(r"^[=-]{3,}\s*$")
 _NUMBERED_HEADING_RE = re.compile(r"^\d+\.\s+[A-Z][A-Z0-9 /()'\-]{3,}$")
+# Requires whitespace before the heading text (rules out "#!/bin/bash",
+# "#SBATCH ..." -- real lines seen in this project's own test set), no
+# preceding-blank-line requirement (unlike underline style): the '#'
+# prefix is unambiguous on its own, so the same-line-could-be-a-rule
+# heuristic underline style needs doesn't apply here.
+_ATX_HEADING_RE = re.compile(r"^#{1,6}\s+\S.*$")
+# Fenced code blocks (```...``` or ~~~...~~~) are common in real Markdown
+# and can contain lines starting with '#' that are not headings at all
+# (shell comments, shebangs) -- confirmed in this project's own test set
+# (whisper/README.md, gpt-neox/README.md both have this). Toggled per
+# line; heading detection for all three styles above is suppressed while
+# inside a fence, not just the new ATX style, since a fenced code example
+# could equally coincidentally resemble the other two styles.
+_FENCE_RE = re.compile(r"^(`{3,}|~{3,})")
 
 # Shared across vocab.py (non-goal confounder notes) and repro.py (caveat
 # section extraction): a bounded, explicit list of heading synonyms for a
@@ -39,9 +57,17 @@ def split_sections(text: str) -> list[Section]:
     lines = text.splitlines()
     heading_lines: list[tuple[int, str]] = []
 
+    in_fence = False
     for i, line in enumerate(lines):
         stripped = line.strip()
-        if not stripped:
+        if _FENCE_RE.match(stripped):
+            in_fence = not in_fence
+            continue
+        if in_fence or not stripped:
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        if indent <= 3 and _ATX_HEADING_RE.match(stripped):
+            heading_lines.append((i, stripped))
             continue
         preceding_ok = (
             i == 0

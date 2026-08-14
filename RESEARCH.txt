@@ -686,3 +686,160 @@ RECOMMENDED NEXT EXPERIMENT (open item, not scheduled, needs its own
   after the fact.
 
 ================================================================================
+13. ATX MARKDOWN HEADER SUPPORT (2026-08-14, operator-directed,
+    falsification-first; the structural fix Section 12 identified)
+================================================================================
+
+H1: adding standard Markdown ATX-header recognition (#, ##, ###) to
+  structure.py's split_sections() -- alongside the existing RST-underline
+  and numbered-caps recognition, not replacing them -- lets real repos'
+  genuine Limitations/Non-Goals/Caveats sections be detected at all, the
+  precondition Section 12 found completely missing.
+
+H0: ATX support still produces mostly false positives on real repos, or
+  regresses existing behavior (this project's own repos, httpstan's RST).
+
+BASELINE: Section 12's own result -- 0 of 8 real Markdown files in the
+  5-repo test set produced any recognized heading; CLIP's real
+  "### Limitations" heading was the clearest concrete miss.
+
+ENTROPY BUDGET: one function (split_sections(), structure.py) gets one
+  new heading-pattern branch, plus a fence-state tracker the new branch
+  needs to be safe (reasoning below). No new dependency (no markdown/
+  commonmark library -- stayed regex/stdlib). No changes to vocab.py or
+  repro.py this round -- Section 12 already widened those; this phase
+  only unblocks them.
+
+PROPOSED PATTERN (reasoned through before implementing, not after):
+  _ATX_HEADING_RE = re.compile(r"^#{1,6}\s+\S.*$")
+    Requires whitespace after the '#'s and at least one non-space
+    character following -- this alone already rejects "#!/bin/bash" and
+    "#SBATCH --job-name=..." (real lines in this test set: gpt-neox's
+    README.md), which have no space after '#'. No preceding-blank-line
+    requirement, unlike underline style: the '#' prefix is unambiguous
+    on its own, so underline style's "could this line just be a rule"
+    heuristic doesn't apply to ATX.
+  _FENCE_RE = re.compile(r"^(`{3,}|~{3,})")
+    Toggled per line; heading detection is suppressed for ALL THREE
+    styles while inside a fence, not just ATX -- confirmed necessary,
+    not hypothetical: whisper/README.md and gpt-neox/README.md (already
+    read as doc sources) both contain fenced shell blocks with lines
+    like "# on Ubuntu or Debian" that are comments, not headings.
+    Extending suppression to the pre-existing two styles was verified
+    to be a no-op for their current passing behavior (this project's
+    own .txt docs and httpstan's RST have no triple-backtick fences).
+
+BUG FOUND DURING THIS WORK, BEFORE DECLARING DONE (not part of the
+  falsification result, a correctness fix caught by re-running the
+  actual 5-repo test set, not assumed clean after the unit tests
+  passed): the first implementation stripped a line's indentation
+  entirely before testing the ATX pattern. httpstan/README.rst uses
+  RST's "::" + 4-space-indented literal-block convention for its
+  install commands -- not a fenced code block (no ```/~~~ markers), so
+  the fence guard didn't catch it -- and its indented "# Build shared
+  libraries" / "# Install the wheel" comment lines were misparsed as
+  headings, regressing httpstan's recognized-heading count from 7 (the
+  correct Section 12 baseline) to 10. Root cause: CommonMark's own ATX
+  spec caps heading indentation at 3 spaces (4+ spaces is an indented
+  code block by spec, not a heading) -- the fix applies that same cap
+  (`indent <= 3`) rather than stripping indentation away unconditionally.
+  Regression test added (test_atx_does_not_match_rst_indented_literal_
+  block_comments) alongside 6 other new structure.py tests (fence
+  suppression, no-blank-line-needed, all six ATX levels, non-ATX "#!"
+  rejection). Full suite: 46/46 passing (40 pre-existing + 6 new).
+
+TEST SET: same 5 real repos as Section 12 (httpstan, whisper, vscode,
+  CLIP, gpt-neox), same local minimal-file snapshots, re-run unchanged.
+
+RESULT -- heading recognition (Section 12's own root-cause measurement,
+  re-run):
+  - clip/README.md: 0 -> 14 recognized headings.
+  - clip/model-card.md: 0 -> 18 recognized headings, including the exact
+    concrete miss named in Section 12: confirmed directly (not inferred
+    from a flag count) that split_sections() now returns "### Out-of-
+    Scope Use Cases", "## Performance and Limitations", and
+    "## Limitations" as real sections with real body text (1093, 31, and
+    550 characters respectively) -- the detection precondition H1 names
+    is met.
+  - gpt-neox/README.md: 0 -> 60. gpt-neox/CONTRIBUTING.md: 0 -> 10.
+  - vscode/README.md: 0 -> 10. vscode/CONTRIBUTING.md: 0 -> 13.
+  - whisper/README.md: 0 -> 8. whisper/model-card.md: 0 -> 10.
+  - httpstan/README.rst: 7 -> 7 (unchanged, correctly -- RST files don't
+    use ATX headers; this is the regression check, not a new gain).
+  - httpstan/doc/contributing.rst: 2 -> 2 (unchanged).
+  8 of 8 real Markdown files went from zero recognized headings to their
+  real heading count; both RST files are unaffected.
+
+RESULT -- scanner flags, full run against all 5 repos: httpstan,
+  whisper, vscode, and clip all produced 0 flags (unchanged from Section
+  12). gpt-neox produced the same 2 flags as Section 12, same file,
+  same lines, same pattern ("In general") -- these come from
+  check_repro's pre-existing generality-language regex, a mechanism this
+  round did not touch, and are unrelated to heading detection. This
+  round produced literally zero NEW flags on any of the 5 repos, so the
+  stated falsification criterion ("false positives exceed roughly half
+  of flags") does not apply in a meaningful 0-flags-produced sense --
+  there is nothing new to be a false positive.
+
+WHY CLIP STILL PRODUCES 0 FLAGS DESPITE ITS LIMITATIONS SECTION NOW
+  BEING DETECTED (checked directly, not left as an unexplained gap):
+  check_repro's heading-based caveat check only flags when
+  `closing_text and hits == 0` -- it requires a non-empty
+  `closing_sections` list (a CONCLUSION/CLOSED/FALSIFICATION REPORT/
+  DELIVERABLE/CLOSING/SUMMARY heading) to compare the caveat's wording
+  against. CLIP's model-card.md has zero closing_sections (confirmed by
+  calling extract_rules() on it directly) -- an ordinary model card
+  states limitations without a separate "closing summary" in this
+  project's specific sense, so the check correctly has nothing to
+  compare against and correctly declines to flag, rather than guessing.
+  Separately, check_vocab's forbidden-term matching short-circuits
+  entirely (`if not forbidden_terms: return flags`) because none of
+  these 5 repos declare their own vocabulary lock (already established,
+  Section 11/12) -- unrelated to headings, unaffected by this round.
+  Both are real, already-understood mechanisms, not new mysteries, and
+  both are named as the actual reason 0 flags persist on real repos even
+  with the root-cause gap fixed.
+
+FALSIFICATION CRITERIA (stated in advance): if CLIP's real Limitations
+  section still isn't detected, that supports H0. RESULT: it is now
+  detected, confirmed directly against the actual section objects
+  produced (not inferred from a downstream flag count) -- does not
+  support H0 on this criterion. If false positives on the 5-repo set
+  exceed roughly half of flags, that supports H0. RESULT: zero new
+  flags were produced by this change; the 2 flags present are carried
+  over unchanged and were already known, pre-existing confounders --
+  does not support H0 on this criterion either.
+
+CONCLUSION: SUPPORTED, precisely for what H1 claims -- the detection
+  precondition. ATX header recognition is implemented, tested (46/46,
+  including a caught-and-fixed regression), and directly confirmed to
+  make real repos' genuine Limitations/Non-Goals/Caveats sections
+  visible to the downstream checks for the first time, with no
+  regression to this project's own convention or to RST files. It does
+  NOT yet cause any of the 5 real repos to produce a new, real flag --
+  that is a distinct, already-identified, structural fact about
+  check_repro's own comparison requirement (needs a closing/summary
+  section to compare against, which ordinary real-world docs like model
+  cards typically don't have) and check_vocab's requirement (the target
+  repo must declare its own vocabulary lock), neither of which this
+  round was scoped to change. Per this project's own rule against
+  reactive, un-scoped patching (Section 11's DECISION, reaffirmed in
+  Section 12's), that gap is named here, not silently patched in the
+  same pass.
+
+DECISION: stopping here, as instructed. Phase B (GitHub Action
+  packaging) is a separate decision for the operator to greenlight next,
+  not automatic from this result.
+
+RECOMMENDED NEXT EXPERIMENT (open item, not scheduled, needs its own
+  falsification-first brief before any code changes): whether
+  check_repro's closing-section requirement should also recognize a
+  real repo's own "conclusion"-shaped ending (a final paragraph, a
+  model card's summary line) even without one of the specific headings
+  _CLOSING_HEADING_RE already matches -- this is exactly the kind of
+  mechanism-widening decision Section 11's DECISION says needs its own
+  scoped brief, not a quiet addition here.
+
+================================================================================
+
+================================================================================

@@ -90,6 +90,25 @@ heading-synonym-widening mechanism as scoped (2 flags produced across
 including the newly-named ATX-header gap as the next open item, in
 RESEARCH.txt Section 12.
 
+UPDATE (2026-08-14): the ATX-header gap named above was fixed and
+falsified -- see RESEARCH.txt Section 13. structure.py's section
+splitter now recognizes standard Markdown "#"/"##"/"###" headers
+(fence-aware, so a "#" inside a fenced code example isn't mistaken for
+a heading). Directly confirmed: CLIP's real "## Limitations" and
+"### Out-of-Scope Use Cases" sections are now detected with real body
+text, the exact concrete miss Section 12 named. Falsification result:
+SUPPORTED for the detection precondition -- 8 of 8 real Markdown files
+in the test set went from zero recognized headings to their real
+count, with no regression to this project's own docs or to RST files.
+This still does not produce new flags on any of the 5 real repos
+tested: a separate, already-understood mechanism (the check that
+compares a caveat's wording against a closing/summary section only
+runs when such a section exists at all, and ordinary real-world docs
+like model cards typically don't have one in this project's specific
+sense) is the reason, not a remaining detection gap. Named as the next
+open item, not fixed reactively in this pass. Full detail in
+RESEARCH.txt Section 13.
+
 SETUP / RUN
 ------------
 See scanner/README.txt for exact, copy-pasteable setup and run
