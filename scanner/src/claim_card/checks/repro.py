@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 
 from claim_card.flag import Flag
-from claim_card.structure import Section
+from claim_card.structure import LIMITATION_HEADING_RE, Section, split_sections
 
 _CAVEAT_LINE_RE = re.compile(r"^.*\b(CAVEAT|residual limitation)\b.*$", re.I | re.M)
 _GENERALITY_RE = re.compile(
@@ -75,12 +75,7 @@ def check_repro(
     for path, text in doc_texts.items():
         for caveat_line_match in _CAVEAT_LINE_RE.finditer(text):
             caveat_line = caveat_line_match.group(0)
-            distinctive = [
-                w.lower().strip(".,()-—")
-                for w in caveat_line.split()
-                if len(w) > 5 and w.lower().strip(".,()-—") not in _STOPWORDS
-            ]
-            distinctive = distinctive[:6]
+            distinctive = _distinctive_words(caveat_line)
             if not distinctive:
                 continue
             hits = sum(1 for w in distinctive if w in closing_text.lower())
@@ -102,4 +97,50 @@ def check_repro(
                     )
                 )
 
+    # Heading-based generalization (2026-08-14, RESEARCH.txt Section 12):
+    # the CAVEAT-line check above only fires on this project's own literal
+    # wording. A real repo's own Limitations/Non-Goals/Known-Issues section
+    # is a caveat too, just declared as a whole section rather than a line
+    # carrying the word "CAVEAT". Same word-overlap-survival mechanism,
+    # applied to the section body instead of a single matched line.
+    for path, text in doc_texts.items():
+        for section in split_sections(text):
+            if not section.heading or not LIMITATION_HEADING_RE.search(section.heading):
+                continue
+            distinctive = _distinctive_words(section.text)
+            if not distinctive:
+                continue
+            hits = sum(1 for w in distinctive if w in closing_text.lower())
+            if closing_text and hits == 0:
+                flags.append(
+                    Flag(
+                        check="reproducibility_cross_check",
+                        file=path,
+                        line=section.start_line,
+                        pattern="limitation section wording overlap",
+                        snippet=section.heading.strip(),
+                        notes=[
+                            "none of this section's distinctive words "
+                            "('%s') were found in the detected closing "
+                            "section(s) -- check whether this stated "
+                            "limitation survived into the closing summary, "
+                            "or whether no closing section exists at all "
+                            "in this repo's docs" % ", ".join(distinctive)
+                        ],
+                    )
+                )
+
     return flags
+
+
+def _distinctive_words(text: str) -> list[str]:
+    words = [
+        w.lower().strip(".,()-—")
+        for w in text.split()
+        if len(w) > 5 and w.lower().strip(".,()-—") not in _STOPWORDS
+    ]
+    # a token that's entirely punctuation (e.g. a heading's "----" underline)
+    # strips down to "" -- and "" is a substring of every string in Python,
+    # which would silently defeat the overlap check below, so drop it here.
+    words = [w for w in words if w]
+    return words[:6]

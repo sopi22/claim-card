@@ -13,6 +13,19 @@ from dataclasses import dataclass
 _UNDERLINE_RE = re.compile(r"^[=-]{3,}\s*$")
 _NUMBERED_HEADING_RE = re.compile(r"^\d+\.\s+[A-Z][A-Z0-9 /()'\-]{3,}$")
 
+# Shared across vocab.py (non-goal confounder notes) and repro.py (caveat
+# section extraction): a bounded, explicit list of heading synonyms for a
+# self-declared limitations/non-goals/caveats section. Widened 2026-08-14
+# beyond this project's own template vocabulary (NON-GOAL/OUT OF SCOPE) to
+# also match real external repos' own phrasing (LIMITATIONS, KNOWN ISSUES,
+# CAVEATS) -- see RESEARCH.txt Section 12. No fuzzy/semantic matching, no
+# open-ended synonym expansion beyond this fixed list.
+LIMITATION_HEADING_RE = re.compile(
+    r"NON-GOALS?|REJECTED|OUT[\s-]OF[\s-]SCOPE|NOT BUILDING|EXPLICITLY NOT|"
+    r"LIMITATIONS?|KNOWN ISSUES?|CAVEATS?",
+    re.I,
+)
+
 
 @dataclass
 class Section:

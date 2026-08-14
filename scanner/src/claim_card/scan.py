@@ -26,6 +26,11 @@ _EXCLUDE_DIR_NAMES = {
 }
 _TEXT_EXTENSIONS = {".txt", ".md", ".rst", ".py"}
 _DOC_PREFIXES = ("readme", "research")
+# Widened 2026-08-14 (RESEARCH.txt Section 12): a bounded, explicit list of
+# additional root-level filenames and one nested-but-fixed-depth pattern
+# (top-level docs/*.rst only, not any nested docs/**/*.rst) -- no open-ended
+# crawl of the repo tree beyond this.
+_EXACT_DOC_NAMES = {"contributing.md", "model-card.md", "limitations.md"}
 
 
 @dataclass
@@ -72,7 +77,15 @@ def _doc_texts(all_files: dict[str, str], repo_root: Path) -> dict[str, str]:
     docs = {}
     for rel_path, text in all_files.items():
         p = Path(rel_path)
-        if len(p.parts) == 1 and p.stem.lower().startswith(_DOC_PREFIXES):
+        if len(p.parts) == 1:
+            if p.stem.lower().startswith(_DOC_PREFIXES) or p.name.lower() in _EXACT_DOC_NAMES:
+                docs[rel_path] = text
+            continue
+        if (
+            len(p.parts) == 2
+            and p.parts[0].lower() == "docs"
+            and p.suffix.lower() == ".rst"
+        ):
             docs[rel_path] = text
     return docs
 

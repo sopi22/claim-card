@@ -15,11 +15,9 @@ from __future__ import annotations
 import re
 
 from claim_card.flag import Flag
-from claim_card.structure import line_at, split_sections
+from claim_card.structure import LIMITATION_HEADING_RE, line_at, split_sections
 
-_NON_GOAL_HEADING_RE = re.compile(
-    r"NON-GOAL|REJECTED|OUT OF SCOPE|NOT BUILDING|EXPLICITLY NOT", re.I
-)
+_NON_GOAL_HEADING_RE = LIMITATION_HEADING_RE
 
 # Capitalized words that, immediately before a forbidden term, suggest a
 # domain-specific compound noun rather than the locked abstraction sense.

@@ -46,3 +46,10 @@ def test_finds_closing_section():
     rules = extract_rules({"RESEARCH.txt": SAMPLE})
     headings = [s.heading for s in rules.closing_sections]
     assert any("FALSIFICATION REPORT" in h for h in headings)
+
+
+def test_finds_summary_heading_as_closing_section():
+    text = "Summary\n-------\nEverything works as intended.\n"
+    rules = extract_rules({"README.md": text})
+    headings = [s.heading for s in rules.closing_sections]
+    assert any("Summary" in h for h in headings)

@@ -516,3 +516,173 @@ DECISION (2026-08-14) -- this is a valid, informative null result, not
   harder for today.
 
 ================================================================================
+12. GENERALIZE EXTRACTION EXPERIMENT (2026-08-14, operator-directed,
+    falsification-first)
+================================================================================
+
+H1: widening vocab.py's heading-synonym detection and repro.py's
+  word-overlap survival check -- more file-discovery patterns, more
+  heading synonyms -- lets Claim Card extract and check self-declared
+  limitations/non-goals/caveats sections in real, heterogeneous public
+  repos, without requiring this project's own bespoke phrasing, while
+  keeping false positives low enough to be useful.
+
+H0: widening these mechanisms either still fails to extract anything
+  usable, or extracts content but produces mostly false-positive flags
+  on manual review.
+
+BASELINE: 0 of 3 previously-tested real repos (httpstan, whisper,
+  vscode) produced any extractable content (Section 11).
+
+SCOPE IMPLEMENTED (entropy budget: bounded, no fuzzy/semantic
+  matching, no new check type, no new dependencies):
+  - scan.py: file discovery widened to an explicit list -- root-level
+    CONTRIBUTING.md, model-card.md, LIMITATIONS.md (exact names, not
+    prefixes), plus top-level docs/*.rst only (not any nested
+    docs/**/*.rst, and not the singular "doc/" some projects use --
+    deliberately not chased, see RESULT below).
+  - vocab.py: its non-goal heading regex now imports a shared,
+    widened LIMITATION_HEADING_RE (structure.py) covering NON-GOALS,
+    OUT-OF-SCOPE (hyphen-flexible), LIMITATIONS, KNOWN ISSUES, CAVEATS
+    in addition to the original terms.
+  - repro.py: new heading-based caveat extraction, reusing the same
+    LIMITATION_HEADING_RE and split_sections() -- treats the body of
+    any matching section as caveat text and runs the existing
+    word-overlap-survival check against it, alongside the original
+    literal "CAVEAT:"-line mechanism (kept, unchanged).
+  - rules.py: closing-section heading regex widened to also accept
+    SUMMARY.
+  All four changes are unit-tested (7 new tests, tests/test_scan.py
+  added); full suite is 40/40 passing.
+
+BUG FOUND AND FIXED DURING THIS WORK (not part of the falsification
+  result, a correctness fix): the new heading-based caveat extraction
+  initially fed each matched section's full text -- including its
+  underline decoration ("----------") -- through the same
+  distinctive-word extraction the literal-CAVEAT-line path uses. A
+  token of pure dashes strips down to an empty string, and "" is a
+  substring of every Python string, which silently defeated the
+  overlap check (a false "found" on every comparison). Fixed by
+  dropping empty tokens in _distinctive_words(). Caught by the
+  project's own synthetic-fixture regression test failing, not by
+  manual inspection -- exactly the kind of thing that test exists to
+  catch.
+
+NEW CONFOUNDER FOUND ON THE SYNTHETIC FIXTURE (ground truth: 12
+  planted violations, unchanged): the widened repro.py mechanism now
+  also flags examples/synthetic_violations/README.txt's own
+  "NON-GOALS / None stated for this fixture." section, because that
+  placeholder wording (also) doesn't survive into the closing text.
+  Not a planted violation, and not patched away -- kept, and the two
+  integration-test assertions that counted exact flag totals were
+  updated (2->3 repro flags, 12->13 total) with an inline comment
+  explaining why, per this project's own rule against reactively
+  patching a result you don't like. This is a real, if minor, false-
+  positive cost of the widening on the one dataset with actual ground
+  truth.
+
+TEST SET: the 3 baseline repos (httpstan, whisper, vscode) plus 2 new,
+  previously-unseen real repos, chosen for genuinely different
+  self-declared-limitations document forms: openai/CLIP (model-card.md,
+  headed "Out-of-Scope Use Cases" / "Limitations" / "Bias and
+  Fairness" -- richer heading vocabulary than whisper's own model
+  card) and EleutherAI/gpt-neox (CONTRIBUTING.md). Several other real
+  CONTRIBUTING.md files were read looking for a second positive
+  candidate (golang/go, facebook/react, stanfordnlp/dspy,
+  allenai/allennlp) -- none contained real limitations/scope content,
+  only contribution-process instructions; this is itself a genuine,
+  if informal, finding: CONTRIBUTING.md in practice is reliably
+  process-only, in every real example checked, none had epistemic
+  content this project's checks are meant to catch. gpt-neox was kept
+  as the second test repo specifically because it is real and
+  representative of that pattern, not because it was expected to
+  produce a positive result.
+
+  For all 5, a minimal local directory was built from the exact real
+  file content (fetched from raw.githubusercontent.com) at the real
+  relative path, rather than a full git clone -- sufficient to
+  exercise the real file-discovery and text-parsing logic honestly,
+  without the size/time cost of cloning full repos (vscode's tree
+  alone would be large) for files whose content is what's actually
+  under test.
+
+RESULT, per repo:
+  - httpstan: rule_source_files = [README.rst] only. doc/contributing.rst
+    still NOT discovered -- its real path uses singular "doc/", which
+    the bounded file-discovery pattern ("docs/*.rst") deliberately does
+    not match (widening to also catch "doc/" was not in scope and was
+    not added). 0 flags. Unchanged from Section 11.
+  - whisper: rule_source_files now includes model-card.md (previously
+    never read at all -- confirmed improvement). 0 flags.
+  - vscode: rule_source_files now includes CONTRIBUTING.md (previously
+    never read -- confirmed improvement). 0 flags.
+  - clip: rule_source_files now includes model-card.md. 0 flags,
+    despite this file having real, on-topic "Out-of-Scope Use Cases"
+    and "Limitations" headings.
+  - gpt-neox: rule_source_files now includes CONTRIBUTING.md. 2 flags,
+    both from check_repro's pre-existing (not part of this widening)
+    generality-language regex matching literal "In general" in
+    ordinary hostfile-configuration instructions -- ordinary technical
+    writing, unrelated to any claim about test/reproducibility
+    generality. Both are false positives / confounders on manual
+    review.
+
+ROOT CAUSE, CONFIRMED DIRECTLY (not assumed): ran split_sections()
+  against every .md/.rst file in the 5-repo test set and counted
+  recognized headings. Every one of the 8 real Markdown files (clip
+  x2, gpt-neox x2, vscode x2, whisper x2) returned ZERO recognized
+  headings. Only httpstan's two genuine RST files, which use real
+  underline-style headers, returned any (7 and 2). structure.py's
+  split_sections() recognizes exactly two heading styles -- RST-style
+  underline (text line + a line of repeated =/- characters) and this
+  project's own numbered-ALLCAPS convention ("8. FALSIFICATION
+  REPORT") -- and does not recognize standard Markdown ATX headers
+  (#, ##, ###) at all. Every real repo in this test set, including
+  CLIP's model-card.md with its on-topic "### Limitations" heading,
+  uses ATX headers. This is why the widened LIMITATION_HEADING_RE
+  never got a chance to match anything on real content: the section
+  splitter never hands it a heading string to test in the first
+  place. This is a different, deeper gap than "heading vocabulary was
+  too narrow" -- it's that section boundaries themselves are never
+  detected in the most common real-world heading style.
+
+FALSIFICATION CRITERIA (stated in advance): if most flags across all 5
+  are false positives on manual review, that supports H0. RESULT: 2
+  flags total were produced across all 5 repos, and both are
+  confounders on manual review (2/2 = 100%). The file-discovery
+  widening independently worked (3 previously-unread real files are
+  now read), but the heading-synonym widening -- the mechanism this
+  experiment was actually testing -- produced zero true engagements
+  with real content, for a reason (ATX header support) outside this
+  experiment's bounded scope.
+
+CONCLUSION: NOT SUPPORTED, for the mechanism as scoped. File-discovery
+  widening is a real, tested, non-regressive improvement and is kept.
+  Heading-synonym widening is also real, tested, and correct on this
+  project's own convention (see the new passing unit tests) -- but it
+  does not yet achieve H1's goal on real repos, because a prerequisite
+  it implicitly depended on (ATX Markdown header recognition in
+  split_sections()) was never in place and was not part of this
+  experiment's authorized scope to add. Per this project's own rule
+  against reactive, un-scoped patching (Section 11's DECISION), that
+  gap is named here, not silently fixed in the same pass.
+
+DECISION: per the operator's own stated gate for this two-phase task,
+  Phase A's result is NOT SUPPORTED -- stopping here. Phase B (GitHub
+  Action packaging) is not built this round.
+
+RECOMMENDED NEXT EXPERIMENT (open item, not scheduled, needs its own
+  falsification-first brief before any code changes, exactly like
+  Section 11's DECISION): add ATX Markdown header recognition
+  (#, ##, ###) to structure.py's split_sections(), which is shared
+  across all four checks and rules.py -- meaning that one change, if
+  it holds up, would very likely be what actually unlocks real-repo
+  checking generally, not just for the two mechanisms touched in this
+  experiment. Given how directly this experiment's own root-cause
+  finding points at it, this is a strong candidate for the next
+  falsification-first brief -- but it is a structural parser change
+  with broader blast radius (every check, not just two), so it earns
+  its own scoped experiment rather than being folded into this one
+  after the fact.
+
+================================================================================

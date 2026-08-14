@@ -61,3 +61,37 @@ def test_no_flag_when_caveat_wording_carried_into_closing_text():
         doc_texts={"RESEARCH.txt": text}, closing_sections=_closing(closing),
     )
     assert not any(f.pattern == "caveat wording overlap" for f in flags)
+
+
+def test_flags_dropped_limitations_section():
+    text = (
+        "Limitations\n-----------\nDoes not support concurrent access safely.\n\n"
+        "Summary\n-------\nEverything works as intended.\n"
+    )
+    flags = check_repro(
+        repro_entries=[], repro_achieved=None, conclusion_grade=None,
+        doc_texts={"README.md": text}, closing_sections=_closing("Everything works as intended.\n", heading="Summary"),
+    )
+    assert any(f.pattern == "limitation section wording overlap" for f in flags)
+
+
+def test_no_flag_when_limitations_section_wording_carried_into_closing():
+    text = (
+        "Limitations\n-----------\nDoes not support concurrent access safely.\n\n"
+        "Summary\n-------\nStill does not support concurrent access safely.\n"
+    )
+    closing = "Still does not support concurrent access safely.\n"
+    flags = check_repro(
+        repro_entries=[], repro_achieved=None, conclusion_grade=None,
+        doc_texts={"README.md": text}, closing_sections=_closing(closing, heading="Summary"),
+    )
+    assert not any(f.pattern == "limitation section wording overlap" for f in flags)
+
+
+def test_no_flag_for_limitations_section_when_no_closing_section_exists():
+    text = "Limitations\n-----------\nDoes not support concurrent access safely.\n"
+    flags = check_repro(
+        repro_entries=[], repro_achieved=None, conclusion_grade=None,
+        doc_texts={"README.md": text}, closing_sections=[],
+    )
+    assert not any(f.pattern == "limitation section wording overlap" for f in flags)

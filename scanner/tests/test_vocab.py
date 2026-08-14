@@ -22,6 +22,18 @@ def test_notes_non_goals_context():
     assert any("disclaimed" in n for n in flags[0].notes)
 
 
+def test_notes_limitations_heading_context():
+    files = {
+        "README.txt": (
+            "LIMITATIONS\n-----------\nThe provider abstraction does not "
+            "handle this case.\n"
+        )
+    }
+    flags = check_vocab(["provider"], files)
+    assert len(flags) == 1
+    assert any("disclaimed" in n for n in flags[0].notes)
+
+
 def test_notes_domain_compound():
     files = {"RESEARCH.txt": "the Settings provider write path\n"}
     flags = check_vocab(["provider"], files)

@@ -75,6 +75,21 @@ file-naming convention is an open question, not something planned,
 in progress, or on a roadmap -- it has not been scoped as an
 experiment yet, and won't be treated as one until it deliberately is.
 
+UPDATE (2026-08-14): the file-naming half of that limitation was
+tested directly -- see RESEARCH.txt Section 12. File-discovery was
+widened (CONTRIBUTING.md, model-card.md, LIMITATIONS.md, top-level
+docs/*.rst) and confirmed working: whisper's model-card.md and
+vscode's CONTRIBUTING.md are now actually read, for the first time.
+But that alone doesn't unlock real-repo checking -- the deeper cause
+is that structure.py's section splitter has never recognized standard
+Markdown "#"/"##"/"###" headers, only RST-style underlines and this
+project's own numbered-caps convention, and every real repo tested
+uses Markdown headers. Falsification result: NOT SUPPORTED for the
+heading-synonym-widening mechanism as scoped (2 flags produced across
+5 real repos, both confounders on manual review). Full detail,
+including the newly-named ATX-header gap as the next open item, in
+RESEARCH.txt Section 12.
+
 SETUP / RUN
 ------------
 See scanner/README.txt for exact, copy-pasteable setup and run
