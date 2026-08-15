@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 
 from claim_card.flag import Flag
-from claim_card.structure import Section
+from claim_card.structure import Section, distinctive_words
 
 _SIGNAL_WORDS = (
     "verified", "proven", "guarantee", "guaranteed", "confirmed",
@@ -90,3 +90,74 @@ def check_closure(closing_sections: list[Section], full_doc_texts: dict[str, str
                 )
 
     return flags
+
+
+# CAVEAT SURVIVAL RATE (CSR): does a caveat logged in a source RESEARCH*
+# doc survive into a downstream README* closing doc? A caveat tagged
+# [CAVEAT:ID] survives if that exact ID reappears anywhere in the closing
+# doc; an untagged caveat/limitation line survives by the same
+# distinctive-word lexicon overlap check_repro already uses for its own
+# wording-survival check -- reused from structure.py rather than
+# reimplemented here.
+_CAVEAT_TAG_RE = re.compile(r"\[CAVEAT:([A-Za-z0-9_.-]+)\]")
+_CAVEAT_LINE_RE = re.compile(r"^.*\b(CAVEAT|residual limitation)\b.*$", re.I | re.M)
+
+
+def _is_source_log(path: str) -> bool:
+    return path.rsplit("/", 1)[-1].lower().startswith("research")
+
+
+def _is_closing_doc(path: str) -> bool:
+    return path.rsplit("/", 1)[-1].lower().startswith("readme")
+
+
+def check_caveat_survival(doc_texts: dict[str, str]) -> tuple[float | None, list[Flag]]:
+    """Returns (CSR, flags). CSR is survived/total across every CAVEAT-line
+    entry found in this repo's RESEARCH* doc(s); None (not 0.0 or 1.0) when
+    no caveats are logged at all, so an empty log can't misread as a
+    perfect or a failed score.
+    """
+    source_texts = {p: t for p, t in doc_texts.items() if _is_source_log(p)}
+    closing_text = "\n".join(t for p, t in doc_texts.items() if _is_closing_doc(p))
+    closing_text_lower = closing_text.lower()
+
+    entries: list[tuple[str, str | None, str, int]] = []
+    for path, text in source_texts.items():
+        for m in _CAVEAT_LINE_RE.finditer(text):
+            line = m.group(0)
+            tag = _CAVEAT_TAG_RE.search(line)
+            line_no = text.count("\n", 0, m.start()) + 1
+            entries.append((path, tag.group(1) if tag else None, line, line_no))
+
+    if not entries:
+        return None, []
+
+    flags: list[Flag] = []
+    survived = 0
+    for path, caveat_id, line, line_no in entries:
+        if caveat_id is not None:
+            ok = caveat_id in closing_text
+            match_desc = f"exact ID match on [CAVEAT:{caveat_id}]"
+        else:
+            words = distinctive_words(line)
+            ok = bool(words) and any(w in closing_text_lower for w in words)
+            match_desc = "lexicon fallback (no [CAVEAT:ID] tag on this line)"
+        if ok:
+            survived += 1
+        else:
+            flags.append(
+                Flag(
+                    check="closure_audit",
+                    file=path,
+                    line=line_no,
+                    pattern="caveat_survival",
+                    snippet=line.strip(),
+                    notes=[
+                        f"caveat did not survive into the closing doc by "
+                        f"{match_desc} -- check whether it was dropped or "
+                        f"just reworded past what this check can match"
+                    ],
+                )
+            )
+
+    return survived / len(entries), flags

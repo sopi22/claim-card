@@ -13,7 +13,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from claim_card.checks.closure import check_closure
+from claim_card.checks.closure import check_caveat_survival, check_closure
 from claim_card.checks.entropy import check_entropy
 from claim_card.checks.repro import check_repro
 from claim_card.checks.vocab import check_vocab
@@ -37,6 +37,7 @@ _EXACT_DOC_NAMES = {"contributing.md", "model-card.md", "limitations.md"}
 class ScanResult:
     rules: RuleSet
     flags: list[Flag] = field(default_factory=list)
+    caveat_survival_rate: float | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -50,6 +51,7 @@ class ScanResult:
                 "achieved_claim": self.rules.repro_achieved,
                 "conclusion_grade": self.rules.conclusion_grade,
             },
+            "caveat_survival_rate": self.caveat_survival_rate,
             "rule_source_files": self.rules.source_files,
             "flag_count": len(self.flags),
             "flags": [f.to_dict() for f in self.flags],
@@ -134,4 +136,7 @@ def scan_repo(repo_root: str | Path) -> ScanResult:
 
     flags += check_closure(rules.closing_sections, doc_texts)
 
-    return ScanResult(rules=rules, flags=flags)
+    csr, csr_flags = check_caveat_survival(doc_texts)
+    flags += csr_flags
+
+    return ScanResult(rules=rules, flags=flags, caveat_survival_rate=csr)

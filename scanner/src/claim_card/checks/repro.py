@@ -9,7 +9,12 @@ from __future__ import annotations
 import re
 
 from claim_card.flag import Flag
-from claim_card.structure import LIMITATION_HEADING_RE, Section, split_sections
+from claim_card.structure import (
+    LIMITATION_HEADING_RE,
+    Section,
+    distinctive_words,
+    split_sections,
+)
 
 _CAVEAT_LINE_RE = re.compile(r"^.*\b(CAVEAT|residual limitation)\b.*$", re.I | re.M)
 _GENERALITY_RE = re.compile(
@@ -17,11 +22,6 @@ _GENERALITY_RE = re.compile(
     r"works\s+everywhere)\b",
     re.I,
 )
-_STOPWORDS = {
-    "the", "a", "an", "is", "was", "were", "this", "that", "not", "and", "or",
-    "but", "with", "for", "from", "than", "than", "it", "its", "as", "of",
-    "to", "in", "on", "recorded", "here", "rather", "than", "so",
-}
 
 
 def check_repro(
@@ -75,7 +75,7 @@ def check_repro(
     for path, text in doc_texts.items():
         for caveat_line_match in _CAVEAT_LINE_RE.finditer(text):
             caveat_line = caveat_line_match.group(0)
-            distinctive = _distinctive_words(caveat_line)
+            distinctive = distinctive_words(caveat_line)
             if not distinctive:
                 continue
             hits = sum(1 for w in distinctive if w in closing_text.lower())
@@ -107,7 +107,7 @@ def check_repro(
         for section in split_sections(text):
             if not section.heading or not LIMITATION_HEADING_RE.search(section.heading):
                 continue
-            distinctive = _distinctive_words(section.text)
+            distinctive = distinctive_words(section.text)
             if not distinctive:
                 continue
             hits = sum(1 for w in distinctive if w in closing_text.lower())
@@ -131,16 +131,3 @@ def check_repro(
                 )
 
     return flags
-
-
-def _distinctive_words(text: str) -> list[str]:
-    words = [
-        w.lower().strip(".,()-—")
-        for w in text.split()
-        if len(w) > 5 and w.lower().strip(".,()-—") not in _STOPWORDS
-    ]
-    # a token that's entirely punctuation (e.g. a heading's "----" underline)
-    # strips down to "" -- and "" is a substring of every string in Python,
-    # which would silently defeat the overlap check below, so drop it here.
-    words = [w for w in words if w]
-    return words[:6]

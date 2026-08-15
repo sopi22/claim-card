@@ -98,3 +98,27 @@ def split_sections(text: str) -> list[Section]:
 def line_at(text: str, offset: int) -> int:
     """1-indexed line number for a character offset into text."""
     return text.count("\n", 0, offset) + 1
+
+
+# Shared across repro.py (caveat/limitation-section wording overlap) and
+# closure.py (caveat survival rate, untagged fallback): the same
+# distinctive-word extraction used to decide whether a piece of source
+# text's wording reappears in a target document.
+STOPWORDS = {
+    "the", "a", "an", "is", "was", "were", "this", "that", "not", "and", "or",
+    "but", "with", "for", "from", "than", "than", "it", "its", "as", "of",
+    "to", "in", "on", "recorded", "here", "rather", "than", "so",
+}
+
+
+def distinctive_words(text: str) -> list[str]:
+    words = [
+        w.lower().strip(".,()-—")
+        for w in text.split()
+        if len(w) > 5 and w.lower().strip(".,()-—") not in STOPWORDS
+    ]
+    # a token that's entirely punctuation (e.g. a heading's "----" underline)
+    # strips down to "" -- and "" is a substring of every string in Python,
+    # which would silently defeat the overlap check below, so drop it here.
+    words = [w for w in words if w]
+    return words[:6]

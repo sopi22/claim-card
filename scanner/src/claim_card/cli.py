@@ -29,6 +29,8 @@ def main(argv: list[str] | None = None) -> int:
     result = scan_repo(args.repo)
     write_report(result, args.out)
 
+    if result.caveat_survival_rate is not None:
+        print(f"claim-card: caveat survival rate {result.caveat_survival_rate:.2f}")
     print(f"claim-card: {len(result.flags)} pattern flag(s) written to {args.out}")
     print("Each flag is a pattern match for human review -- see notes in the report.")
     by_check: dict[str, int] = {}
