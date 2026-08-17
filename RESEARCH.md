@@ -1,9 +1,6 @@
-CLAIM CARD — RESEARCH LOG
-============================
+# CLAIM CARD — RESEARCH LOG
 
-================================================================================
-1. CLARIFICATION GATE (Section 17)
-================================================================================
+## 1. CLARIFICATION GATE (Section 17)
 
 Q: Does FOSS Pulse make a good first test fixture, or should a synthetic
    repo with injected violations be built instead?
@@ -19,9 +16,7 @@ A: DECISION — both, not either/or. FOSS Pulse alone (a repo with, as far
    back in, per this session's autonomy instruction -- flagged here so
    it can be revisited.
 
-================================================================================
-2. NOVELTY FIREWALL (Section 4)
-================================================================================
+## 2. NOVELTY FIREWALL (Section 4)
 
 Searched (2026-08-13): AI-agent compliance/audit tooling, AI-text
 detectors, reproducibility-documentation scorers.
@@ -48,9 +43,7 @@ CONCLUSION: no found system checks a project's own claims against that
 same project's own stated epistemic rules. Residual gap holds. Building
 is justified. DECISION logged; no fork candidate was found or expected.
 
---------------------------------------------------------------------------------
-2A. SUPPLEMENTARY NOVELTY CHECK (2026-08-13, later same day, follow-up)
---------------------------------------------------------------------------------
+### 2A. SUPPLEMENTARY NOVELTY CHECK (2026-08-13, later same day, follow-up)
 
 This entry is additive -- Section 2 above stands as originally logged
 and covered a different, real search. The operator surfaced four
@@ -117,9 +110,7 @@ three more checked candidates without narrowing the gap. The one
 open item is Bifrost's identity, which remains genuinely unresolved,
 not resolved in Claim Card's favor by default.
 
-================================================================================
-3. RESEARCH HYPOTHESIS FRAMING (Section 7)
-================================================================================
+## 3. RESEARCH HYPOTHESIS FRAMING (Section 7)
 
 H1: A meaningful subset of epistemic-integrity violations in AI-agent-
 authored project artifacts -- locked-vocabulary leakage, entropy-budget
@@ -139,9 +130,7 @@ that supports H0. If false positives exceed roughly half of flagged
 items on the first real test run, that's grounds to reconsider the
 deterministic-only approach.
 
-================================================================================
-4. VOCABULARY LOCK AND ENTROPY BUDGET FOR THIS PROJECT (Sections 9-10)
-================================================================================
+## 4. VOCABULARY LOCK AND ENTROPY BUDGET FOR THIS PROJECT (Sections 9-10)
 
 Locked: claim, check, flag, pattern, evidentiary grade, closure
   language, vocabulary term, entropy count, scan.
@@ -162,21 +151,19 @@ Entropy budget used: 4 check types (vocabulary scan, entropy check,
   a dependency. Docker: not used, not needed for local static analysis
   of one repo at a time.
 
-================================================================================
-5. BASELINE -- MANUAL READ (recorded before comparing to tool output)
-================================================================================
+## 5. BASELINE -- MANUAL READ (recorded before comparing to tool output)
 
-Before writing any check code, README.txt and RESEARCH.txt in
+Before writing any check code, README.md and RESEARCH.md in
 foss-escape-architecture were read directly, and a manual grep for the
 repo's own forbidden-vocabulary terms and a small set of overclaiming
 words (verified, proven, guarantee(d), confirmed, always, never, 100%,
 fully) was run across all non-.venv text files.
 
 What this baseline caught:
-  - README.txt's NON-GOALS list uses "capability", "provider", and
+  - README.md's NON-GOALS list uses "capability", "provider", and
     "cost" as explicitly disclaimed concepts ("this is explicitly NOT
     ... a capability/provider abstraction, a cost model").
-  - RESEARCH.txt uses "provider" six more times, all as part of
+  - RESEARCH.md uses "provider" six more times, all as part of
     "Settings provider" / "settings-provider", the literal Android API
     name -- not the locked abstraction sense.
   - "capability" appears once more, inside a quoted phrase describing
@@ -202,9 +189,7 @@ have missed at least some of the six scattered "Settings provider"
 occurrences and the OPEN-item cross-reference, both several hundred
 lines apart from the text that would need to be held against them.
 
-================================================================================
-6. TOOL RESULTS
-================================================================================
+## 6. TOOL RESULTS
 
 RUN 1 -- foss-escape-architecture (real repo, first test case):
   17 flags: 11 vocabulary_scan, 6 closure_audit, 0 entropy_check,
@@ -244,15 +229,13 @@ visible from the FOSS Pulse run alone, since that run had no ground
 truth to compare against.
 
 A third, structural bug was found and fixed before either run above:
-the heading detector mis-split FOSS Pulse's own RESEARCH.txt on a
+the heading detector mis-split FOSS Pulse's own RESEARCH.md on a
 two-line wrapped heading and a footer paragraph, both purely from
 plain-text formatting, not from any content issue. Fixed by requiring a
 heading candidate line to be preceded by a blank line, an underline, or
 start-of-file.
 
-================================================================================
-7. FALSE POSITIVES / FALSE NEGATIVES
-================================================================================
+## 7. FALSE POSITIVES / FALSE NEGATIVES
 
 FALSE POSITIVES: on RUN 1 (real repo), 17/17 flags were confounders
 relative to "a real forbidden-vocabulary or overclaiming violation" --
@@ -267,9 +250,7 @@ were caught. RUN 1 cannot supply a false-negative reading on its own,
 since (as far as could be determined by the same manual baseline read)
 it contains no real violations to miss.
 
-================================================================================
-8. CONFOUNDERS CONSIDERED (Section 11)
-================================================================================
+## 8. CONFOUNDERS CONSIDERED (Section 11)
 
   - A forbidden term appearing in a disclaimed NON-GOALS/rejected-
     candidates list, not as a real claim -- the majority cause of
@@ -291,9 +272,7 @@ it contains no real violations to miss.
     document -- closure_audit flags the co-occurrence but cannot itself
     tell whether the reconciling language is actually present nearby.
 
-================================================================================
-9. REPRODUCIBILITY LEVEL (Section 12)
-================================================================================
+## 9. REPRODUCIBILITY LEVEL (Section 12)
 
 R1 -- same environment, repeated runs during this session, both
 against foss-escape-architecture and against examples/synthetic_
@@ -304,9 +283,7 @@ claiming a general false-positive rate for the tool across other real
 repos, sight unseen, would be a reproducibility-grade overclaim of
 exactly the kind this tool exists to catch, and is not made here.
 
-================================================================================
-10. FALSIFICATION REPORT (Section 15 deliverable)
-================================================================================
+## 10. FALSIFICATION REPORT (Section 15 deliverable)
 
 QUESTION: can deterministic, pattern-based text/structure analysis
 detect the four named classes of epistemic-integrity violation at a
@@ -369,15 +346,11 @@ RECOMMENDED NEXT EXPERIMENT (open item, not scheduled):
   3. Repeat RUN 1 in a separate session (R2) before relying on the
      17-flags/17-confounders reading for anything beyond this report.
 
-================================================================================
-END OF PHASE 1 DELIVERABLE.
-================================================================================
+## END OF PHASE 1 DELIVERABLE.
 
-================================================================================
 11. POST-CLOSURE: EXTRACTION GENERALITY CHECK (does not reopen the
     Section 10 conclusion, which was scoped to this project's own
-    template family)
-================================================================================
+#     template family)
 
 FACT (2026-08-14) -- before pursuing RECOMMENDED NEXT EXPERIMENT item 1
   above (a wider real-repo hunt), checked a prior question: can the
@@ -417,7 +390,7 @@ FACT (2026-08-14) -- before pursuing RECOMMENDED NEXT EXPERIMENT item 1
        constraints that way, which is unsurprising since that phrasing
        is this project's own convention, not a general one.
 
-DECISION (2026-08-14) -- scope narrowed in README.txt (CURRENT PHASE
+DECISION (2026-08-14) -- scope narrowed in README.md (CURRENT PHASE
   section), not in the scanner. No change to rules.py's regexes, no
   change to scan.py's file-selection stage, no CONTRIBUTING.md/
   model-card.md fallback added, even though the finding above suggests
@@ -515,10 +488,8 @@ DECISION (2026-08-14) -- this is a valid, informative null result, not
   the way this population stops being empty -- not something to search
   harder for today.
 
-================================================================================
 12. GENERALIZE EXTRACTION EXPERIMENT (2026-08-14, operator-directed,
-    falsification-first)
-================================================================================
+#     falsification-first)
 
 H1: widening vocab.py's heading-synonym detection and repro.py's
   word-overlap survival check -- more file-discovery patterns, more
@@ -570,7 +541,7 @@ BUG FOUND AND FIXED DURING THIS WORK (not part of the falsification
 
 NEW CONFOUNDER FOUND ON THE SYNTHETIC FIXTURE (ground truth: 12
   planted violations, unchanged): the widened repro.py mechanism now
-  also flags examples/synthetic_violations/README.txt's own
+  also flags examples/synthetic_violations/README.md's own
   "NON-GOALS / None stated for this fixture." section, because that
   placeholder wording (also) doesn't survive into the closing text.
   Not a planted violation, and not patched away -- kept, and the two
@@ -685,10 +656,8 @@ RECOMMENDED NEXT EXPERIMENT (open item, not scheduled, needs its own
   its own scoped experiment rather than being folded into this one
   after the fact.
 
-================================================================================
 13. ATX MARKDOWN HEADER SUPPORT (2026-08-14, operator-directed,
-    falsification-first; the structural fix Section 12 identified)
-================================================================================
+#     falsification-first; the structural fix Section 12 identified)
 
 H1: adding standard Markdown ATX-header recognition (#, ##, ###) to
   structure.py's split_sections() -- alongside the existing RST-underline
@@ -840,6 +809,3 @@ RECOMMENDED NEXT EXPERIMENT (open item, not scheduled, needs its own
   mechanism-widening decision Section 11's DECISION says needs its own
   scoped brief, not a quiet addition here.
 
-================================================================================
-
-================================================================================
