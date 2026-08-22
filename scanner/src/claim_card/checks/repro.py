@@ -51,6 +51,17 @@ def check_repro(
         )
 
     closing_text = "\n".join(s.text for s in closing_sections)
+    has_closing = bool(closing_sections)
+
+    def _compare_text(path: str) -> str:
+        # No doc in this repo has an explicitly-headed closing section
+        # (RESEARCH.md Section 14): fall back to the rest of the repo's
+        # own document text, excluding the current doc so a caveat's own
+        # line/section can't trivially "survive" by matching itself.
+        if has_closing:
+            return closing_text
+        return "\n".join(t for p, t in doc_texts.items() if p != path)
+
     for path, text in doc_texts.items():
         for m in _GENERALITY_RE.finditer(text):
             if max_logged is None or max_logged < 3:
@@ -78,8 +89,9 @@ def check_repro(
             distinctive = distinctive_words(caveat_line)
             if not distinctive:
                 continue
-            hits = sum(1 for w in distinctive if w in closing_text.lower())
-            if closing_text and hits == 0:
+            compare_text = _compare_text(path)
+            hits = sum(1 for w in distinctive if w in compare_text.lower())
+            if compare_text and hits == 0:
                 line_no = text.count("\n", 0, caveat_line_match.start()) + 1
                 flags.append(
                     Flag(
@@ -110,8 +122,9 @@ def check_repro(
             distinctive = distinctive_words(section.text)
             if not distinctive:
                 continue
-            hits = sum(1 for w in distinctive if w in closing_text.lower())
-            if closing_text and hits == 0:
+            compare_text = _compare_text(path)
+            hits = sum(1 for w in distinctive if w in compare_text.lower())
+            if compare_text and hits == 0:
                 flags.append(
                     Flag(
                         check="reproducibility_cross_check",

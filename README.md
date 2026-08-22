@@ -103,6 +103,24 @@ sense) is the reason, not a remaining detection gap. Named as the next
 open item, not fixed reactively in this pass. Full detail in
 RESEARCH.md Section 13.
 
+UPDATE (2026-08-22): the "check compares against nothing" gap named
+above was scoped, implemented, and falsified -- see RESEARCH.md Section
+14. check_repro's two caveat/limitation-wording-survival checks no
+longer require a heading-matched closing section to have anything to
+compare against; when a repo has no such section, they now fall back to
+the rest of the repo's own document text (excluding the source doc, to
+avoid a trivial self-match). Falsification result: SUPPORTED for the
+comparison-text mechanism as scoped, directly confirmed executing a real
+comparison against openai/whisper's real "Performance and Limitations"
+section (previously would have silently skipped); zero new flags and
+zero new false positives across the 5-repo test set (httpstan, whisper,
+vscode, the synthetic fixture, this repo's own docs), zero regressions
+(52/52 tests). Still produces no new true-positive-eligible flag on this
+set -- httpstan and vscode each hit a separate, already-named,
+out-of-scope precondition (httpstan's doc/-discovery gap; vscode has no
+Limitations-style section at all), not this mechanism. Full detail in
+RESEARCH.md Section 14.
+
 ## SETUP / RUN
 See scanner/README.md for exact, copy-pasteable setup and run
 commands.

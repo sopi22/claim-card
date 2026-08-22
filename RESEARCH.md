@@ -809,3 +809,178 @@ RECOMMENDED NEXT EXPERIMENT (open item, not scheduled, needs its own
   mechanism-widening decision Section 11's DECISION says needs its own
   scoped brief, not a quiet addition here.
 
+14. CLOSING-TEXT FALLBACK FOR CAVEAT-SURVIVAL COMPARISON (2026-08-22,
+#     operator-directed, falsification-first; the comparison-text gap
+#     Section 13 named)
+
+H1: in check_repro's two wording-survival checks (the CAVEAT-line check
+  and the LIMITATION_HEADING_RE-based section check), dropping
+  _CLOSING_HEADING_RE as the sole gate on what text a caveat's wording
+  is compared against -- and falling back to the rest of the repo's own
+  document text when no doc has an explicitly-headed closing section --
+  lets these checks actually engage with real repos that state a
+  caveat/limitation but have no CONCLUSION/CLOSED/FALSIFICATION REPORT/
+  DELIVERABLE/CLOSING/SUMMARY-headed section, the exact structural gap
+  Section 13 named as the reason it produced zero new flags on any of
+  its 5 real repos even after ATX headers made their Limitations
+  sections visible.
+
+H0: falling back to the rest of the document text produces mostly false
+  positives on manual review -- e.g. it flags a Limitations section as
+  "wording didn't survive" essentially every time a repo simply has no
+  closing summary at all (a structurally guaranteed non-overlap, since
+  there was never anywhere for the wording to be echoed), rather than
+  distinguishing that case from a caveat that was genuinely stated once
+  and then dropped.
+
+BASELINE: Section 13's own result -- closing_text is built solely from
+  rules.closing_sections (gated by _CLOSING_HEADING_RE in rules.py); 0
+  of 5 real repos tested there (httpstan, whisper, vscode, CLIP,
+  gpt-neox) produced any closing_sections outside this project's own
+  numbered-caps convention, so closing_text was "" for all of them and
+  `if closing_text and hits == 0` short-circuited on the empty string --
+  both survival checks silently declined to compare at all, rather than
+  comparing and finding zero overlap.
+
+ENTROPY BUDGET: both existing loops in checks/repro.py get one local
+  fallback expression each; no new function, no new regex, no new file.
+  No change to rules.py's extraction, no change to structure.py, no new
+  heading vocabulary (LIMITATION_HEADING_RE and _CLOSING_HEADING_RE are
+  unchanged), no fuzzy/semantic matching -- still exact substring
+  membership on distinctive_words(), same as every prior round.
+  closure.py's check_closure and check_caveat_survival are explicitly
+  untouched and out of this brief's scope: check_closure scans inside
+  closing_sections for its own absolutist-language signal words, a
+  different mechanism that doesn't compare against caveat wording at
+  all, and check_caveat_survival's closing_text is filename-convention-
+  gated (README*-prefixed docs), not _CLOSING_HEADING_RE-gated, so it
+  isn't the mechanism this brief is scoped to.
+
+PROPOSED PATTERN (reasoned through before implementing): keep
+  `closing_text = "\n".join(s.text for s in closing_sections)` exactly
+  as today when closing_sections is non-empty. When it's empty, each of
+  the two loops (both already keyed by `path` as they iterate
+  doc_texts.items()) compares against
+  `"\n".join(t for p, t in doc_texts.items() if p != path)` instead --
+  every other doc's text, excluding the current document. The exclusion
+  is deliberate, not incidental: without it, a caveat's own line or
+  section would always trivially "survive" inside a comparison text that
+  still contains that exact line, defeating the check in the opposite
+  direction (silently never flagging instead of silently never
+  comparing). A repo with only one doc file therefore still correctly
+  produces no flag on this path -- there is no "rest of the document
+  text" to fall back to -- matching today's behavior for that case
+  rather than changing it.
+
+TEST SET: httpstan (README.rst, doc/contributing.rst), whisper
+  (README.md, model-card.md), vscode (README.md, CONTRIBUTING.md) --
+  fresh live snapshots of the same files Sections 12-13 used -- plus
+  examples/synthetic_violations/ (this project's own ground-truth
+  fixture) and this repo's own README.md/RESEARCH.md, per the
+  operator's own choice of set for this round (replacing Section 13's
+  CLIP/gpt-neox pair with the synthetic fixture and a self-scan).
+
+FALSIFICATION CRITERIA (stated in advance): if this change produces a
+  new flag on any of the 5 that is a false positive on manual review --
+  including the systematic "no closing section exists at all" shape H0
+  names, not just an isolated bad match -- that supports H0, and per the
+  operator's own stated gate for this round, the change is reverted (not
+  patched further) and logged NOT SUPPORTED with the specific case. If
+  it produces zero new false positives (whether or not it produces new
+  true-eligible flags), that does not support H0 on this criterion.
+
+IMPLEMENTATION: checks/repro.py's `check_repro()` keeps
+  `closing_text = "\n".join(s.text for s in closing_sections)` and a new
+  `has_closing = bool(closing_sections)`, plus a local
+  `_compare_text(path)` helper returning `closing_text` when
+  `has_closing`, else `"\n".join(t for p, t in doc_texts.items() if p !=
+  path)`. Both existing loops (the CAVEAT-line check, the
+  LIMITATION_HEADING_RE section check) call `_compare_text(path)` in
+  place of the bare `closing_text` reference for both the `hits = sum(...)`
+  line and the `if closing_text and hits == 0` gate. No other file
+  touched. Full test suite: 52/52 passing, no regressions.
+
+RESULT: ran against all 5 targets (fresh live snapshots for the 3 real
+  repos, fetched the same files Sections 12-13 used):
+  - httpstan: 0 flags. Directly confirmed why, not assumed: `_doc_texts()`
+    only reads README.rst for this repo -- doc/contributing.rst (singular
+    "doc/") is still not discovered, the separate, already-named,
+    out-of-scope gap from this memory's open-items list. With only one
+    doc read, `_compare_text()`'s fallback has no "rest of the document"
+    to fall back to (same as a single-doc repo always has), so this
+    round's mechanism was never exercised here at all -- unchanged from
+    Section 13.
+  - vscode: 0 flags. Both docs (README.md, CONTRIBUTING.md) are read and
+    closing_sections is empty, so the fallback path is live, but neither
+    doc has a LIMITATION_HEADING_RE-matching section or a literal
+    CAVEAT/"residual limitation" line to begin with -- confirmed directly
+    by re-running split_sections() over both files. The new mechanism had
+    nothing to compare, not a missed comparison.
+  - whisper: 0 flags, but this is the one repo where the new mechanism
+    actually ran, confirmed directly (not inferred from the flag count):
+    model-card.md's real "## Performance and Limitations" section
+    produces distinctive words `['performance', 'limitations', 'studies',
+    'existing', 'systems', 'models']`; with closing_sections empty, the
+    fallback compared this against README.md's text (the only other doc)
+    and found real overlap (`performance`, `models` both appear in
+    README.md), so `hits == 0` was false and no flag was raised -- a
+    correct decline on real evidence, not a silent no-op the way this
+    case would have resolved under Section 13's behavior (closing_text
+    empty, check never even compares).
+  - synthetic_violations fixture: 13 flags, identical to the pre-change
+    baseline (5 closure_audit, 1 entropy_check, 3 reproducibility_
+    cross_check, 4 vocabulary_scan). Confirmed why unchanged: this
+    project's own docs have 2 closing_sections (its own numbered-caps
+    CONCLUSION/FALSIFICATION-REPORT convention), so `has_closing` is
+    True and `_compare_text()` returns the exact same `closing_text` as
+    before -- the new code path is provably not exercised on this
+    target, which is the correct non-regression result, not a
+    coincidence.
+  - claim-card's own README.md/RESEARCH.md (self-scan): 13 flags (2
+    closure_audit, 10 reproducibility_cross_check, 1 vocabulary_scan),
+    CSR 0.89 -- identical counts to the pre-change baseline for the same
+    reason as the synthetic fixture (closing_sections non-empty here
+    too, fallback not exercised).
+
+  Zero new flags were produced anywhere in this run, and the one case
+  where the new code path actually executed (whisper) was verified by
+  direct introspection of `_compare_text()`'s inputs and output, not
+  just the final report -- it performed a real comparison and reached a
+  correct, evidence-based decision not to flag.
+
+FALSIFICATION CRITERIA RE-CHECKED: no new flag was produced on any of
+  the 5, so there is no new false positive to find on manual review --
+  does not support H0. The systematic "no closing section exists at
+  all" shape H0 warned about (every Limitations section flagging just
+  because nothing exists to compare against) did not materialize on
+  this set: the one eligible case (whisper) had a second real doc to
+  compare against and genuinely found overlap, rather than reaching an
+  empty `compare_text` and skipping, or reaching a non-empty
+  `compare_text` with no real relationship to the caveat and flagging
+  spuriously. Does not support H0.
+
+CONCLUSION: SUPPORTED, precisely for the narrow claim H1 makes -- the
+  comparison-text fallback replaces "silently never compare" with
+  "actually compare, using real document text," confirmed directly by
+  execution trace on the one real repo in this set with the structural
+  precondition to exercise it (whisper), with zero new false positives
+  and zero regressions (52/52 tests, identical flag counts on both
+  targets whose docs already had closing_sections). It does NOT yet
+  produce a new true-positive-eligible flag on this 5-repo set --
+  httpstan and vscode each fail a different, already-named,
+  out-of-scope precondition (single doc discovered; no Limitations
+  section present at all) rather than this round's mechanism, and
+  whisper's one eligible case resolved as a correct decline on genuine
+  evidence rather than a flag. This mirrors Section 13's own precedent
+  for how this project grades a mechanism that is directly confirmed
+  working as scoped but hasn't yet produced a new real-world catch on a
+  small sample -- graded the same way here for consistency, not rounded
+  up further.
+
+DECISION: keeping the change -- the stated revert-on-false-positive gate
+  for this round was not triggered. Whether check_repro's survival
+  checks should also widen beyond LIMITATION_HEADING_RE / the literal
+  CAVEAT line, or whether httpstan's doc/-discovery gap should finally be
+  closed, remain separate, already-named open items needing their own
+  scoped briefs -- not folded into this round.
+
